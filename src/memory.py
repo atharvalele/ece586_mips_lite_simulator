@@ -10,8 +10,6 @@ import config
 import logging
 
 class Memory:
-    # Memory Size - default 4K
-    size = 4096
     # byte array to hold memory contents
     mem = bytearray()
     
