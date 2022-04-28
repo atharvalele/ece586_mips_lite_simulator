@@ -1,0 +1,38 @@
+R-type instructions: ADD, SUB, MUL, OR, AND, XOR
+------------------------------------------------
+Instruction format: INSTR Rd Rs Rt
+
+Bits:       31-26     25-21   20-16   15-11      10-0
+Width:        6         5       5       5         11
+            Opcode      Rs      Rt      Rd      Unused
+
+ADD         000000
+SUB         000010
+MUL         000100
+OR          000110
+AND         001000
+XOR         001010
+
+
+
+
+I-type instructions: ADDI, SUBI, MULI, ORI, ANDI, XORI, LDW, STW, BZ, BEQ, JR, HALT
+-----------------------------------------------------------------------------------
+Instruction format: INSTR Rt Rs Imm
+
+Bits:       31-26     25-21   20-16       15-0
+Width:        6         5       5          16
+            Opcode      Rs      Rt      Immediate
+
+ADDI        000001
+SUBI        000011
+MULI        000101
+ORI         000111
+ANDI        001001
+XORI        001011
+LDW         001100
+STW         001101
+BZ          001110
+BEQ         001111
+JR          010000
+HALT        010001
