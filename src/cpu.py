@@ -12,7 +12,18 @@ import logging
 
 class MIPS_lite:
     # Init
-    def __init__(self) -> None:
+    def __init__(self, mode: str, mem_fname: str, out_fname: str) -> None:
+        # Save mode, memory image filename, and output filename
+        self.mode = mode
+        self.mem_fname = mem_fname
+        self.out_fname = out_fname
+
+        # Debugging print
+        logging.debug('Starting simulator with the following config: ')
+        logging.debug('Memory Image File: ' + self.mem_fname)
+        logging.debug('Output File: ' + self.out_fname)
+        logging.debug('Mode: ' + self.mode)
+
         # Clock cycle counter
         self.clk = 0
 
