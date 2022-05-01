@@ -57,7 +57,7 @@ class Instruction:
         else:
             logging.error ('Invalid opcode: ' + bin(self.opcode)) 
 
-    
+
 
 class MIPS_lite:
     # Init
@@ -75,6 +75,10 @@ class MIPS_lite:
 
         # Clock cycle counter
         self.clk = 0
+
+        # Register declaration
+        self.pc = 0
+        self.R = [0] * 32
 
         # Instantiate memory object
         self.mem = memory.Memory(config.MEM_SIZE)
