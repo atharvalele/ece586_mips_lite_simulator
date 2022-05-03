@@ -33,27 +33,37 @@ class Instruction:
     JR = 0b010000
     HALT = 0b010001
 
+    # Lists to hold instructions
     R_type_instr = [ADD, SUB, MUL, OR, AND, XOR]
     I_type_instr = [ADDI, SUBI, MULI, ORI, ANDI, XORI, LDW, STW, BZ, BEQ, JR, HALT]
+
+    # Decoding Bitmasks
+    OPCODE_BITMASK = 0xFC000000
+    RS_BITMASK = 0x03E00000
+    RT_BITMASK = 0x001F0000
+    RD_BITMASK = 0x0000F800
+    IMM_BITMASK = 0x000007FF
 
     def __init__(self, instr: int) -> None:
         self.instr = instr
 
     def decode(self) -> None:
-        self.opcode = (self.instr & 0xFC000000) >> 26
+        # Grab the opcode
+        self.opcode = (self.instr & Instruction.OPCODE_BITMASK) >> 26
 
-        if self.opcode in self.R_type_instr:
+        # Get the instruction details depending on the type
+        if self.opcode in Instruction.R_type_instr:
             self.type = 'R' 
-            self.rs = (self.instr & 0x03E00000) >> 19
-            self.rt = (self.instr & 0x001F0000) >> 16
-            self.rd = (self.instr & 0x0000F800) >> 11
+            self.rs = (self.instr & Instruction.RS_BITMASK) >> 19
+            self.rt = (self.instr & Instruction.RT_BITMASK) >> 16
+            self.rd = (self.instr & Instruction.RD_BITMASK) >> 11
             self.imm = None
-        elif self.opcode in self.I_type_instr:
+        elif self.opcode in Instruction.I_type_instr:
             self.type = 'I' 
-            self.rs = (self.instr & 0x03E00000) >> 19
-            self.rt = (self.instr & 0x001F0000) >> 16
+            self.rs = (self.instr & Instruction.RS_BITMASK) >> 19
+            self.rt = (self.instr & Instruction.RT_BITMASK) >> 16
             self.rd = None
-            self.imm = self.instr & 0x000007FF
+            self.imm = self.instr & Instruction.IMM_BITMASK
         else:
             logging.error ('Invalid opcode: ' + bin(self.opcode)) 
 
