@@ -47,7 +47,7 @@ class Memory:
     def write_n(self, addr: int, data: bytearray) -> None:
         l = len(data)
         # Make sure address is within range
-        assert (addr+l) < self.size, "Address out of range"
+        assert (addr+l) <= self.size, "Address out of range"
         # Make sure data isn't larger than memory size
         assert l <= self.size
         # Write the bytearray into memory
