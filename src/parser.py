@@ -14,4 +14,7 @@ def parser(mem_image: str) -> bytearray:
         to_byte = bytearray.fromhex(string)
         image += to_byte
     
+    # Close file
+    mem_file.close()
+    
     return image
