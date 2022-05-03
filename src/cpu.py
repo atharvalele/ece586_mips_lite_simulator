@@ -10,6 +10,8 @@ import config
 import memory
 import logging
 
+from parser import parser
+
 class Instruction:
     # R-type
     ADD = 0b000000
@@ -47,6 +49,25 @@ class Instruction:
     def __init__(self, instr: int) -> None:
         self.instr = instr
 
+    # Override for print()
+    def __str__(self):
+        if self.opcode is not None:
+            # format(): 2 characters taken for '0b', so add that to # of needed characters
+            info = '\nInstruction: 0x%08x' % self.instr + ' : ' + format(self.instr, '#034b')
+            info += '\nOpcode: ' + hex(self.opcode) + ' : ' + format(self.opcode, '#08b')
+            info += '\nType: ' + self.type
+            info += '\nRs: ' + hex(self.rs) + ' : ' + format(self.rs, '#07b')
+            info += '\nRt: ' + hex(self.rt) + ' : ' + format(self.rt, '#07b')
+
+            if self.type == 'R':
+                info += '\nRd: ' + hex(self.rd) + ' : ' + format(self.rd, '#07b')
+            else:
+                info += '\nImm: ' + hex(self.imm) + ' : ' + format(self.imm, '#013b')
+        else:
+            info = 'Not decoded/Empty'
+        
+        return info
+
     def decode(self) -> None:
         # Grab the opcode
         self.opcode = (self.instr & Instruction.OPCODE_BITMASK) >> 26
@@ -54,18 +75,19 @@ class Instruction:
         # Get the instruction details depending on the type
         if self.opcode in Instruction.R_type_instr:
             self.type = 'R' 
-            self.rs = (self.instr & Instruction.RS_BITMASK) >> 19
+            self.rs = (self.instr & Instruction.RS_BITMASK) >> 21
             self.rt = (self.instr & Instruction.RT_BITMASK) >> 16
             self.rd = (self.instr & Instruction.RD_BITMASK) >> 11
             self.imm = None
         elif self.opcode in Instruction.I_type_instr:
             self.type = 'I' 
-            self.rs = (self.instr & Instruction.RS_BITMASK) >> 19
+            self.rs = (self.instr & Instruction.RS_BITMASK) >> 21
             self.rt = (self.instr & Instruction.RT_BITMASK) >> 16
             self.rd = None
             self.imm = self.instr & Instruction.IMM_BITMASK
         else:
-            logging.error ('Invalid opcode: ' + bin(self.opcode)) 
+            logging.error('Invalid opcode: ' + bin(self.opcode))
+            exit(1)
 
 
 
@@ -90,10 +112,47 @@ class MIPS_lite:
         self.pc = 0
         self.R = [0] * 32
 
+        # Pipeline - initialized as a null list for now
+        self.pipeline = [None, None, None, None, None]
+
         # Instantiate memory object
         self.mem = memory.Memory(config.MEM_SIZE)
 
+        # Fill memory with data
+        self.mem.write_n(0, parser(self.mem_fname))
+
+    # Instruction fetch
+    def fetch(self):
+        # Get 4 bytes from memory
+        d_array = self.mem.read_n(self.pc, 4)
+
+        # 'big' here means that that first byte in the array is MSB
+        data = int.from_bytes(bytes=d_array, byteorder='big', signed=False)
+        logging.debug('IF: 0x%08x' % data)
+
+        # Create an instruction object and add it to the pipeline
+        self.pipeline[0] = Instruction(data)
+        
+    # Instruction decode
+    def decode(self):
+        if self.pipeline[1] is not None:
+            self.pipeline[1].decode()
+            logging.debug(self.pipeline[1])
+
     # CPU Operation per clock cycle
     def do_cpu_things(self) -> None:
-        # Placeholder function for now
-        pass
+        # Shift instructions in the pipeline
+        self.pipeline = [None] + self.pipeline[0:-1]
+
+        # Debug print clock
+        logging.debug('Clock: ' + str(self.clk))
+
+        # 5-stage pipeline
+        self.fetch()
+        self.decode()
+
+        # Increment PC
+        self.pc += 4
+
+        # Increment clock
+        self.clk += 1
