@@ -146,6 +146,22 @@ class MIPS_lite:
             self.pipeline[1].decode()
             logging.debug(self.pipeline[1])
 
+    # Instruction execute
+    def execute(self):
+        # Placeholder
+        pass
+
+    # Instruction memory
+    def memory(self):
+        # Placeholder
+        pass
+
+    # Instruction writeback
+    def writeback(self):
+        # Placeholder
+        pass
+
+
     # CPU Operation per clock cycle
     def do_cpu_things(self) -> None:
         # Shift instructions in the pipeline
@@ -157,6 +173,9 @@ class MIPS_lite:
         # 5-stage pipeline
         self.fetch()
         self.decode()
+        self.execute()
+        self.memory()
+        self.writeback()
 
         # Increment PC
         self.pc += 4
