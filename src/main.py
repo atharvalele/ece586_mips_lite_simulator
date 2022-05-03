@@ -63,5 +63,9 @@ if __name__ == '__main__':
     cpu_inst = cpu.MIPS_lite(sim_mode, memory_image_fname, output_fname)
 
     # Main loop
-    # while True:
-    #     cpu_inst.do_cpu_things()
+    while True:
+        if (debug_arg == 'debug'):
+            step = input('')
+        
+        # CPU Loop
+        cpu_inst.do_cpu_things()
