@@ -58,8 +58,6 @@ def convert_to_mem(output: str, command):
     o_file = open(output,'a') 
     for i in command:
         op_list = i.split()
-        if (op_list == '\n'):
-            pass
         op, instr_type = op_code_check(op_list[0])
         if (instr_type == "R"):
             # Determine Registers
@@ -105,8 +103,8 @@ if __name__ == '__main__':
     # Open the file taken as command line argument
     f = open(sys.argv[1], 'r')
 
-    # Read all the lines as string 
-    command_list = f.readlines()
+    # Read all the lines as string -- skip blank lines
+    command_list = [line for line in f.readlines() if line.strip()]
 
     # Print to test all commands were picked up
     print(command_list)
