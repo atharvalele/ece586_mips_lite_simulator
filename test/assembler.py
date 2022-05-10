@@ -47,11 +47,14 @@ def r_check(rd: str):
 
 def imm_check(imm: str):
     imm_val = int(imm)
-    if (imm_val > 2**16):
+    if (imm_val > 2**16 or imm_val < -(2**16)):
         print("Immediate Field Exceeded")
         exit(1)
-    return imm_val
-
+    elif (imm_val < 0):
+        return imm_val + (1<<16)
+    else:
+        return imm_val
+    
 
 def convert_to_mem(output: str, command):
     # Extract tokens from list
@@ -77,9 +80,24 @@ def convert_to_mem(output: str, command):
 
         elif (instr_type == "I"):
             # Determine Register and Value
-            rs = r_check(op_list[1][:-1])
-            rt = r_check(op_list[2][:-1])
-            imm = bin(imm_check(op_list[3])).replace("0b","")
+            if op == 0b010001:
+                rs = str(0).zfill(5)
+                rt = str(0).zfill(5)
+                imm = str(0).zfill(16)
+            # elif op == 0b010000:
+                
+            # elif op == 0b001111:
+
+            # elif op == 0b001110:
+
+            # elif op == 0b001101:
+
+            # elif op == 0b001100:
+
+            else:
+                rs = r_check(op_list[1][:-1])
+                rt = r_check(op_list[2][:-1])
+                imm = bin(imm_check(op_list[3])).replace("0b","").zfill(16)
             # Convert to the correct format for memory image
             trace = bin(op).replace("0b","").zfill(6) + rs + rt + imm
             trace = hex(int(trace.ljust(32, "0"),2)).replace("0x","").zfill(8)
