@@ -84,16 +84,26 @@ def convert_to_mem(output: str, command):
                 rs = str(0).zfill(5)
                 rt = str(0).zfill(5)
                 imm = str(0).zfill(16)
-            # elif op == 0b010000:
-                
-            # elif op == 0b001111:
-
-            # elif op == 0b001110:
-
-            # elif op == 0b001101:
-
-            # elif op == 0b001100:
-
+            elif op == 0b010000:
+                rs = str(0).zfill(5)
+                rt = str(0).zfill(5)
+                imm = str(0).zfill(16)
+            elif op == 0b001111:
+                rs = str(0).zfill(5)
+                rt = str(0).zfill(5)
+                imm = str(0).zfill(16)
+            elif op == 0b001110:
+                rs = str(0).zfill(5)
+                rt = str(0).zfill(5)
+                imm = str(0).zfill(16)
+            elif op == 0b001101:
+                rs = str(0).zfill(5)
+                rt = str(0).zfill(5)
+                imm = str(0).zfill(16)
+            elif op == 0b001100:
+                rs = str(0).zfill(5)
+                rt = str(0).zfill(5)
+                imm = str(0).zfill(16)
             else:
                 rs = r_check(op_list[1][:-1])
                 rt = r_check(op_list[2][:-1])
