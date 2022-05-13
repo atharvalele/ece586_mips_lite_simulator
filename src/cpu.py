@@ -116,7 +116,14 @@ class MIPS_lite:
         self.clk = 0
 
         # Register declaration
+        # npc = next program counter
+        # A, B, imm, ALUout registers used for ALU operations in the execute stage
         self.pc = 0
+        self.npc = 0
+        self.A = 0
+        self.B = 0
+        self.imm = 0
+        self.alu_out = 0
         self.R = [0] * 32
 
         # Pipeline - initialized as a null list for now
