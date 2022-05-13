@@ -12,6 +12,13 @@ import logging
 
 from parser import parser
 
+# Get twos complement value
+def get_twos_complement_val(val: int, bits: int) -> int:
+    # Check if sign bit is set & compute negative value
+    if val & (1 << (bits - 1)) != 0:
+        val = val - (1 << bits)
+    return val
+
 class Instruction:
     # Dictionaries to hold instructions
     R_type_instr = {
@@ -43,7 +50,7 @@ class Instruction:
     RS_BITMASK = 0x03E00000
     RT_BITMASK = 0x001F0000
     RD_BITMASK = 0x0000F800
-    IMM_BITMASK = 0x000007FF
+    IMM_BITMASK = 0x0000FFFF
 
     def __init__(self, instr: int) -> None:
         self.instr = instr
@@ -96,8 +103,6 @@ class Instruction:
             logging.error('Invalid opcode: ' + bin(self.opcode))
             exit(1)
 
-
-
 class MIPS_lite:
     # Init
     def __init__(self, mode: str, mem_fname: str, out_fname: str) -> None:
@@ -146,6 +151,9 @@ class MIPS_lite:
 
         # Create an instruction object and add it to the pipeline
         self.pipeline[0] = Instruction(data)
+
+        # Update PC to PC + 4
+        self.npc = self.pc + 4
         
     # Instruction decode
     def decode(self):
@@ -155,8 +163,16 @@ class MIPS_lite:
 
     # Instruction execute
     def execute(self):
-        # Placeholder
-        pass
+        if self.pipeline[2] is not None:
+            # Grab register values stores in Rs, Rt
+            self.A = self.R[self.pipeline[2].rs]
+            self.B = self.R[self.pipeline[2].rt]
+            logging.debug('EX: Operand Values = ' + str(self.A) + ', ' + str(self.B))
+
+            # Sign extend the immediate -- only applies to I type
+            if self.pipeline[2].opcode in Instruction.I_type_instr.values():
+                imm_val = get_twos_complement_val(self.pipeline[2].imm, 16)
+                logging.debug('EX: Immediate value = ' + str(imm_val))
 
     # Instruction memory
     def memory(self):
