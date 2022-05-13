@@ -6,7 +6,6 @@ cpu.py: MIPS-Lite implementation
 Author(s): Atharva Lele <atharva@pdx.edu>
 """
 
-from this import s
 import config
 import memory
 import logging
@@ -55,6 +54,15 @@ class Instruction:
 
     def __init__(self, instr: int) -> None:
         self.instr = instr
+
+        # A = content of Rs, B = content of Rt, alu_out = ALU output
+        # imm_ext = sign-extended immediate, ref_addr = Address for a LDW/STW
+        # None would simply mean that it is not used
+        self.A = None
+        self.B = None
+        self.imm_ext = None
+        self.ref_addr = None
+        self.alu_out = None
 
     # Get 'key' for value
     def find_key(self, input_dict, value):
@@ -162,54 +170,59 @@ class MIPS_lite:
             self.pipeline[1].decode()
             logging.debug(self.pipeline[1])
 
+            # Grab register values stores in Rs, Rt
+            self.pipeline[1].A = self.R[self.pipeline[1].rs]
+            self.pipeline[1].B = self.R[self.pipeline[1].rt]
+            logging.debug('ID: Operand Values = ' + str(self.A) + ', ' + str(self.B))
+
+            # Sign extend the immediate -- only applies to I type
+            if self.pipeline[1].opcode in Instruction.I_type_instr.values():
+                self.pipeline[1].imm_ext = get_twos_complement_val(self.pipeline[1].imm, 16)
+                logging.debug('ID: Immediate value = ' + str(self.pipeline[1].imm_ext))
+
     # Instruction execute
     def execute(self):
         if self.pipeline[2] is not None:
-            # Grab register values stores in Rs, Rt
-            self.A = self.R[self.pipeline[2].rs]
-            self.B = self.R[self.pipeline[2].rt]
-            logging.debug('EX: Operand Values = ' + str(self.A) + ', ' + str(self.B))
+            # Grab imm, A, B operands
+            self.A = self.pipeline[2].A
+            self.B = self.pipeline[2].B
+            self.imm = self.pipeline[2].imm_ext
 
-            # Sign extend the immediate -- only applies to I type
-            if self.pipeline[2].opcode in Instruction.I_type_instr.values():
-                imm_val = get_twos_complement_val(self.pipeline[2].imm, 16)
-                logging.debug('EX: Immediate value = ' + str(imm_val))
-        
             # Add and Add Immediate
             if self.pipeline[2].opcode == Instruction.R_type_instr.get('ADD'):
                 self.R[self.pipeline[2].rd] = self.A + self.B
             elif self.pipeline[2].opcode == Instruction.I_type_instr.get('ADDI'):
-                self.R[self.pipeline[2].rt] = self.A + imm_val
+                self.R[self.pipeline[2].rt] = self.A + self.imm
             
             # Sub and Sub Immediate
             elif self.pipeline[2].opcode == Instruction.R_type_instr.get('SUB'):
                 self.R[self.pipeline[2].rd] = self.A - self.B
             elif self.pipeline[2].opcode == Instruction.I_type_instr.get('SUBI'):
-                self.R[self.pipeline[2].rt] = self.A - imm_val
+                self.R[self.pipeline[2].rt] = self.A - self.imm
                 
             # Mul and Mul Immediate
             elif self.pipeline[2].opcode == Instruction.R_type_instr.get('MUL'):
                 self.R[self.pipeline[2].rd] = self.A * self.B
             elif self.pipeline[2].opcode == Instruction.I_type_instr.get('MULI'):
-                self.R[self.pipeline[2].rt] = self.A * imm_val
+                self.R[self.pipeline[2].rt] = self.A * self.imm
             
             # AND and AND Immediate
             elif self.pipeline[2].opcode == Instruction.R_type_instr.get('AND'):
                 self.R[self.pipeline[2].rd] = self.A & self.B
             elif self.pipeline[2].opcode == Instruction.I_type_instr.get('ANDI'):
-                self.R[self.pipeline[2].rt] = self.A & imm_val
+                self.R[self.pipeline[2].rt] = self.A & self.imm
 
             # OR and OR Immediate
             elif self.pipeline[2].opcode == Instruction.R_type_instr.get('OR'):
                 self.R[self.pipeline[2].rd] = self.A | self.B
             elif self.pipeline[2].opcode == Instruction.I_type_instr.get('ORI'):
-                self.R[self.pipeline[2].rt] = self.A | imm_val
+                self.R[self.pipeline[2].rt] = self.A | self.imm
                 
             # XOR and XOR Immediate
             elif self.pipeline[2].opcode == Instruction.R_type_instr.get('XOR'):
                 self.R[self.pipeline[2].rd] = self.A ^ self.B
             elif self.pipeline[2].opcode == Instruction.I_type_instr.get('XORI'):
-                self.R[self.pipeline[2].rt] = self.A * imm_val
+                self.R[self.pipeline[2].rt] = self.A * self.imm
 
             # LDW 
             #elif self.pipeline[2].opcode == Instruction.I_type_instr.get('LDW'):
