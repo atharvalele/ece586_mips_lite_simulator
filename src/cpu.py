@@ -112,6 +112,27 @@ class Instruction:
             logging.error('Invalid opcode: ' + bin(self.opcode))
             exit(1)
 
+    # Return Destination register
+    def get_dest_reg(self):
+        if self.opcode in self.R_type_instr:
+            return self.rd
+        else:
+            return self.rt
+
+    # Return source register
+    def get_src_regs(self):
+        src_regs = []
+
+        # Rs is always a source register
+        src_regs.append(self.rs)
+
+        # Rt is a source reg if it is a R-type instruction
+        if self.opcode in self.R_type_instr:
+            src_regs.append(self.rt)
+
+        return src_regs
+    
+
 class MIPS_lite:
     # Init
     def __init__(self, mode: str, mem_fname: str, out_fname: str) -> None:
@@ -128,6 +149,12 @@ class MIPS_lite:
 
         # Clock cycle counter
         self.clk = 0
+
+        # Hazard flags
+        self.hazard_flag = False
+        self.data_hazard = False
+        self.control_hazard = False
+        self.num_clocks_to_stall = 0
 
         # Register declaration
         # npc = next program counter
@@ -149,8 +176,48 @@ class MIPS_lite:
         # Fill memory with data
         self.mem.write_n(0, parser(self.mem_fname))
 
+    # Data Hazard Check
+    def check_data_hazard(self):
+        if self.pipeline[1] is not None:
+            dest_reg = None
+            source_regs = self.pipeline[1].get_src_regs()
+
+            # Check if there are conflicts with the MEM stage
+            if self.pipeline[3] is not None:
+                dest_reg = self.pipeline[3].get_dest_reg()
+
+                if dest_reg in source_regs:
+                    logging.debug('DH: Hazard detected with MEM stage')
+                    logging.debug(f'DH: Dest: {dest_reg}, SRCS: {source_regs}')
+
+                    # Set flags - we don't need to check for conflicts
+                    # with EX stage if we are going to stall for 1 cycle
+                    self.data_hazard = True
+                    self.num_clocks_to_stall = 1
+
+            # Check if there are conflicts with the EX stage
+            elif self.pipeline[2] is not None:
+                dest_reg = self.pipeline[2].get_dest_reg()
+
+                if dest_reg in source_regs:
+                    logging.debug('DH: Hazard detected with EX stage')
+                    logging.debug(f'DH: Dest: {dest_reg}, SRCS: {source_regs}')
+
+                    self.data_hazard = True
+                    self.num_clocks_to_stall = 2
+
+            # No conflicts found
+            else:
+                self.data_hazard = False
+                self.num_clocks_to_stall = 0
+
+
     # Instruction fetch
     def fetch(self):
+        # Do not fetch if hazard has been detected
+        if self.hazard_flag == True:
+            return
+        
         # Get 4 bytes from memory
         d_array = self.mem.read_n(self.pc, 4)
 
@@ -166,6 +233,10 @@ class MIPS_lite:
         
     # Instruction decode
     def decode(self):
+        # Do not decode if hazard has been detected
+        if self.hazard_flag == True:
+            return
+        
         if self.pipeline[1] is not None:
             self.pipeline[1].decode()
             logging.debug(self.pipeline[1])
@@ -179,6 +250,9 @@ class MIPS_lite:
             if self.pipeline[1].opcode in Instruction.I_type_instr.values():
                 self.pipeline[1].imm_ext = get_twos_complement_val(self.pipeline[1].imm, 16)
                 logging.debug('ID: Immediate value = ' + str(self.pipeline[1].imm_ext))
+
+            # Check for hazards
+            self.check_data_hazard()
 
     # Instruction execute
     def execute(self):
@@ -247,8 +321,18 @@ class MIPS_lite:
 
     # CPU Operation per clock cycle
     def do_cpu_things(self) -> None:
-        # Shift instructions in the pipeline
-        self.pipeline = [None] + self.pipeline[0:-1]
+        # Shift instructions in the pipeline according to hazard conditions
+        self.hazard_flag = self.data_hazard or self.control_hazard
+
+        if (self.hazard_flag == True) and (self.num_clocks_to_stall > 0):
+            # Pipeline will be blank at EX stage
+            # [i0, i1, i2, i3, i4] --> [i0, i1, None, i2, i3]
+            self.pipeline = self.pipeline[0:2] + [None] + self.pipeline[2:-1]
+
+            # Decrement hazard stall clocks
+            self.num_clocks_to_stall -= 1
+        else:
+            self.pipeline = [None] + self.pipeline[0:-1]
 
         # Debug print clock
         logging.debug('Clock: ' + str(self.clk))
@@ -260,8 +344,8 @@ class MIPS_lite:
         self.memory()
         self.writeback()
 
-        # Increment PC
-        self.pc += 4
+        # Set PC to updated value
+        self.pc += self.npc
 
         # Increment clock
         self.clk += 1
