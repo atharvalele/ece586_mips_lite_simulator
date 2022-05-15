@@ -9,6 +9,7 @@ Author(s): Atharva Lele <atharva@pdx.edu>
 import config
 import memory
 import logging
+import numpy
 
 from parser import parser
 
@@ -58,11 +59,11 @@ class Instruction:
         # A = content of Rs, B = content of Rt, alu_out = ALU output
         # imm_ext = sign-extended immediate, ref_addr = Address for a LDW/STW
         # None would simply mean that it is not used
-        self.A = None
-        self.B = None
-        self.imm_ext = None
-        self.ref_addr = None
-        self.alu_out = None
+        self.A = numpy.int32(0)
+        self.B = numpy.int32(0)
+        self.imm_ext = numpy.int16(0)
+        self.ref_addr = numpy.int16(0)
+        self.alu_out = numpy.int32(0)
 
     # Get 'key' for value
     def find_key(self, input_dict, value):
@@ -134,9 +135,9 @@ class MIPS_lite:
         # A, B, imm, ALUout registers used for ALU operations in the execute stage
         self.pc = 0
         self.npc = 0
-        self.A = 0
-        self.B = 0
-        self.imm = 0
+        self.A = numpy.int32(0)
+        self.B = numpy.int32(0)
+        self.imm = numpy.int16(0)
         self.alu_out = 0
         self.R = [0] * 32
 
@@ -171,8 +172,8 @@ class MIPS_lite:
             logging.debug(self.pipeline[1])
 
             # Grab register values stores in Rs, Rt
-            self.pipeline[1].A = self.R[self.pipeline[1].rs]
-            self.pipeline[1].B = self.R[self.pipeline[1].rt]
+            self.pipeline[1].A = numpy.int32(self.R[self.pipeline[1].rs])
+            self.pipeline[1].B = numpy.int32(self.R[self.pipeline[1].rt])
             logging.debug('ID: Operand Values = ' + str(self.A) + ', ' + str(self.B))
 
             # Sign extend the immediate -- only applies to I type
@@ -222,7 +223,7 @@ class MIPS_lite:
             elif self.pipeline[2].opcode == Instruction.R_type_instr.get('XOR'):
                 self.pipeline[2].alu_out = self.A ^ self.B
             elif self.pipeline[2].opcode == Instruction.I_type_instr.get('XORI'):
-                self.pipeline[2].alu_out = self.A * self.imm
+                self.pipeline[2].alu_out = self.A ^ self.imm
 
             # LDW 
             #elif self.pipeline[2].opcode == Instruction.I_type_instr.get('LDW'):
