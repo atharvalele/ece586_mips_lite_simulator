@@ -190,39 +190,39 @@ class MIPS_lite:
 
             # Add and Add Immediate
             if self.pipeline[2].opcode == Instruction.R_type_instr.get('ADD'):
-                self.R[self.pipeline[2].rd] = self.A + self.B
+                self.pipeline[2].alu_out = self.A + self.B
             elif self.pipeline[2].opcode == Instruction.I_type_instr.get('ADDI'):
-                self.R[self.pipeline[2].rt] = self.A + self.imm
+                self.pipeline[2].alu_out = self.A + self.imm
             
             # Sub and Sub Immediate
             elif self.pipeline[2].opcode == Instruction.R_type_instr.get('SUB'):
-                self.R[self.pipeline[2].rd] = self.A - self.B
+                self.pipeline[2].alu_out = self.A - self.B
             elif self.pipeline[2].opcode == Instruction.I_type_instr.get('SUBI'):
-                self.R[self.pipeline[2].rt] = self.A - self.imm
+                self.pipeline[2].alu_out = self.A - self.imm
                 
             # Mul and Mul Immediate
             elif self.pipeline[2].opcode == Instruction.R_type_instr.get('MUL'):
-                self.R[self.pipeline[2].rd] = self.A * self.B
+                self.pipeline[2].alu_out = self.A * self.B
             elif self.pipeline[2].opcode == Instruction.I_type_instr.get('MULI'):
-                self.R[self.pipeline[2].rt] = self.A * self.imm
+                self.pipeline[2].alu_out = self.A * self.imm
             
             # AND and AND Immediate
             elif self.pipeline[2].opcode == Instruction.R_type_instr.get('AND'):
-                self.R[self.pipeline[2].rd] = self.A & self.B
+                self.pipeline[2].alu_out = self.A & self.B
             elif self.pipeline[2].opcode == Instruction.I_type_instr.get('ANDI'):
-                self.R[self.pipeline[2].rt] = self.A & self.imm
+                self.pipeline[2].alu_out = self.A & self.imm
 
             # OR and OR Immediate
             elif self.pipeline[2].opcode == Instruction.R_type_instr.get('OR'):
-                self.R[self.pipeline[2].rd] = self.A | self.B
+                self.pipeline[2].alu_out = self.A | self.B
             elif self.pipeline[2].opcode == Instruction.I_type_instr.get('ORI'):
-                self.R[self.pipeline[2].rt] = self.A | self.imm
+                self.pipeline[2].alu_out = self.A | self.imm
                 
             # XOR and XOR Immediate
             elif self.pipeline[2].opcode == Instruction.R_type_instr.get('XOR'):
-                self.R[self.pipeline[2].rd] = self.A ^ self.B
+                self.pipeline[2].alu_out = self.A ^ self.B
             elif self.pipeline[2].opcode == Instruction.I_type_instr.get('XORI'):
-                self.R[self.pipeline[2].rt] = self.A * self.imm
+                self.pipeline[2].alu_out = self.A * self.imm
 
             # LDW 
             #elif self.pipeline[2].opcode == Instruction.I_type_instr.get('LDW'):
