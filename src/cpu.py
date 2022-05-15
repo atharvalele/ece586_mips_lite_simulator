@@ -114,7 +114,7 @@ class Instruction:
 
     # Return Destination register
     def get_dest_reg(self):
-        if self.opcode in self.R_type_instr:
+        if self.opcode in Instruction.R_type_instr.values():
             return self.rd
         else:
             return self.rt
@@ -127,7 +127,7 @@ class Instruction:
         src_regs.append(self.rs)
 
         # Rt is a source reg if it is a R-type instruction
-        if self.opcode in self.R_type_instr:
+        if self.opcode in Instruction.R_type_instr:
             src_regs.append(self.rt)
 
         return src_regs
@@ -194,9 +194,10 @@ class MIPS_lite:
                     # with EX stage if we are going to stall for 1 cycle
                     self.data_hazard = True
                     self.num_clocks_to_stall = 1
+                    return
 
             # Check if there are conflicts with the EX stage
-            elif self.pipeline[2] is not None:
+            if self.pipeline[2] is not None:
                 dest_reg = self.pipeline[2].get_dest_reg()
 
                 if dest_reg in source_regs:
@@ -205,11 +206,11 @@ class MIPS_lite:
 
                     self.data_hazard = True
                     self.num_clocks_to_stall = 2
+                    return
 
             # No conflicts found
-            else:
-                self.data_hazard = False
-                self.num_clocks_to_stall = 0
+            self.data_hazard = False
+            self.num_clocks_to_stall = 0
 
 
     # Instruction fetch
@@ -331,7 +332,11 @@ class MIPS_lite:
 
             # Decrement hazard stall clocks
             self.num_clocks_to_stall -= 1
+            if self.num_clocks_to_stall == 0:
+                self.data_hazard = False
+                self.control_hazard = False
         else:
+            # [i0, i1, i2, i3, i4] --> [None, i0, i1, i2, i3]
             self.pipeline = [None] + self.pipeline[0:-1]
 
         # Debug print clock
@@ -345,7 +350,7 @@ class MIPS_lite:
         self.writeback()
 
         # Set PC to updated value
-        self.pc += self.npc
+        self.pc = self.npc
 
         # Increment clock
         self.clk += 1
