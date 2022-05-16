@@ -6,6 +6,7 @@ cpu.py: MIPS-Lite implementation
 Author(s): Atharva Lele <atharva@pdx.edu>
 """
 
+from re import L
 import config
 import memory
 import logging
@@ -61,8 +62,8 @@ class Instruction:
         # None would simply mean that it is not used
         self.A = numpy.int32(0)
         self.B = numpy.int32(0)
-        self.imm_ext = numpy.int16(0)
-        self.ref_addr = numpy.int16(0)
+        self.imm_ext = numpy.int32(0)
+        self.ref_addr = numpy.int32(0)
         self.alu_out = numpy.int32(0)
 
     # Get 'key' for value
@@ -164,7 +165,7 @@ class MIPS_lite:
         self.npc = 0
         self.A = numpy.int32(0)
         self.B = numpy.int32(0)
-        self.imm = numpy.int16(0)
+        self.imm = numpy.int32(0)
         self.alu_out = 0
         self.R = [0] * 32
 
@@ -301,24 +302,30 @@ class MIPS_lite:
                 self.pipeline[2].alu_out = self.A ^ self.imm
 
             # LDW 
-            #elif self.pipeline[2].opcode == Instruction.I_type_instr.get('LDW'):
-                # = imm_val + self.A  
+            elif self.pipeline[2].opcode == Instruction.I_type_instr.get('LDW'):
+                self.pipeline[2].ref_addr = self.A + self.imm
 
             # STW
-            #elif self.pipeline[2].opcode == Instruction.I_type_instr.get('STW'):
-                # self.R[self.A] 
-                
+            elif self.pipeline[2].opcode == Instruction.I_type_instr.get('STW'):
+                self.pipeline[2].ref_addr = self.A + self.imm
+
             #BZ
 
     # Instruction memory
     def memory(self):
-        # Placeholder
-        pass
+        if self.pipeline[3] is not None:
+            if self.pipeline[3].opcode == Instruction.I_type_instr.get('LDW'):
+                # Extract data array from memory
+                data_array = self.mem.read_n(self.pipeline[3].ref_addr, 4)
+                data = int.from_bytes(bytes=data_array, byteorder='big', signed=True)
+                self.pipeline[3].B = numpy.int32(data)
 
     # Instruction writeback
     def writeback(self):
         # Placeholder
-        pass
+        if self.pipeline[4] is not None:
+            if self.pipeline[4].opcode == Instruction.I_type_instr.get('LDW'):
+                self.R[self.pipeline[3].rt] = self.pipeline[4].B
 
 
     # CPU Operation per clock cycle
