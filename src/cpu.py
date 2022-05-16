@@ -319,13 +319,18 @@ class MIPS_lite:
                 data_array = self.mem.read_n(self.pipeline[3].ref_addr, 4)
                 data = int.from_bytes(bytes=data_array, byteorder='big', signed=True)
                 self.pipeline[3].B = numpy.int32(data)
+            elif self.pipeline[3].opcode == Instruction.I_type_instr.get('STW'):
+                # Write data array to memory 
+                int_data = int(self.pipeline[3].B)
+                tobyte = int_data.to_bytes(4, 'big')
+                data_array = self.mem.write_n(self.pipeline[3].ref_addr, tobyte)
 
     # Instruction writeback
     def writeback(self):
         # Placeholder
         if self.pipeline[4] is not None:
             if self.pipeline[4].opcode == Instruction.I_type_instr.get('LDW'):
-                self.R[self.pipeline[3].rt] = self.pipeline[4].B
+                self.R[self.pipeline[4].rt] = self.pipeline[4].B
 
 
     # CPU Operation per clock cycle
