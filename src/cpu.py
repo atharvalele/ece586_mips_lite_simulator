@@ -213,7 +213,8 @@ class MIPS_lite:
             # No conflicts found
             self.data_hazard = False
             self.num_clocks_to_stall = 0
-
+    
+  
 
     # Instruction fetch
     def fetch(self):
@@ -310,6 +311,21 @@ class MIPS_lite:
                 self.pipeline[2].ref_addr = self.A + self.imm
 
             #BZ
+          
+            #BEQ
+            elif self.pipeline[2].opcode == Instruction.I_type_instr.get('BEQ'):
+                if self.A == self.B:
+                    self.npc = self.pc + (4 * self.imm)
+                else :
+                    self.npc = self.pc + 4
+                
+            
+            #JR
+            elif self.pipeline[2].opcode == Instruction.I_type_instr.get('JR'):
+                self.npc = self.A
+
+            #HALT
+
 
     # Instruction memory
     def memory(self):
