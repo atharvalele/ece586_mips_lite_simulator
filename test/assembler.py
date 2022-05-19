@@ -24,11 +24,11 @@ def op_code_check(opcode: str):
         "ORI ": 0b000111,
         "ANDI": 0b001001,
         "XORI": 0b001011,
-        "LDW ": 0b001100,
-        "STW ": 0b001101,
-        "BZ  ": 0b001110,
-        "BEQ ": 0b001111,
-        "JR  ": 0b010000,
+        "LDW": 0b001100,
+        "STW": 0b001101,
+        "BZ": 0b001110,
+        "BEQ": 0b001111,
+        "JR": 0b010000,
         "HALT": 0b010001   
     }
     if opcode in r_type:
@@ -80,30 +80,36 @@ def convert_to_mem(output: str, command):
 
         elif (instr_type == "I"):
             # Determine Register and Value
+            # HALT
             if op == 0b010001:
                 rs = str(0).zfill(5)
                 rt = str(0).zfill(5)
                 imm = str(0).zfill(16)
+            # JR
             elif op == 0b010000:
-                rs = str(0).zfill(5)
+                rs = r_check(op_list[1])
                 rt = str(0).zfill(5)
                 imm = str(0).zfill(16)
+            # BEQ
             elif op == 0b001111:
-                rs = str(0).zfill(5)
-                rt = str(0).zfill(5)
-                imm = str(0).zfill(16)
+                rs = r_check(op_list[1][:-1])
+                rt = r_check(op_list[2][:-1])
+                imm = bin(imm_check(op_list[3])).replace("0b","").zfill(16)
+            # BZ
             elif op == 0b001110:
-                rs = str(0).zfill(5)
+                rs = r_check(op_list[1][:-1])
                 rt = str(0).zfill(5)
-                imm = str(0).zfill(16)
+                imm = bin(imm_check(op_list[2])).replace("0b","").zfill(16)
+            # STW
             elif op == 0b001101:
-                rs = str(0).zfill(5)
-                rt = str(0).zfill(5)
-                imm = str(0).zfill(16)
+                rs = r_check(op_list[2][:-1])
+                rt = r_check(op_list[1][:-1])
+                imm = bin(imm_check(op_list[3])).replace("0b","").zfill(16)
+            # LDW
             elif op == 0b001100:
-                rs = str(0).zfill(5)
-                rt = str(0).zfill(5)
-                imm = str(0).zfill(16)
+                rs = r_check(op_list[2][:-1])
+                rt = r_check(op_list[1][:-1])
+                imm = bin(imm_check(op_list[3])).replace("0b","").zfill(16)
             else:
                 rs = r_check(op_list[1][:-1])
                 rt = r_check(op_list[2][:-1])
@@ -118,7 +124,10 @@ def convert_to_mem(output: str, command):
             trace = trace + "\n"
             # Write to file
             o_file.write(trace)
-    
+    mem_occ = len(command)
+    for i in range(mem_occ, 1023):
+        o_file.write("00000000\n")
+    o_file.write("00000000")
     o_file.close()
             
         
