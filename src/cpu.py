@@ -144,6 +144,9 @@ class MIPS_lite:
         self.mode = mode
         self.mem_fname = mem_fname
         self.out_fname = out_fname
+        
+        # Halt flag
+        self.halt_flag = False
 
         # Debugging print
         logging.debug('Starting simulator with the following config: ')
@@ -226,6 +229,10 @@ class MIPS_lite:
     def fetch(self):
         # Do not fetch if hazard has been detected
         if self.hazard_flag == True:
+            return
+
+        # Do not fetch more if halt instruction is found
+        if self.halt_flag == True:
             return
         
         # Get 4 bytes from memory
@@ -337,11 +344,13 @@ class MIPS_lite:
                 self.flush_pipeline()
 
             #HALT
+            elif self.pipeline[2].opcode == Instruction.I_type_instr.get('HALT'):
+                self.halt_flag = True
 
             else:
                 pass
         else:
-            print('NONE')
+            logging.debug('EX: Empty')
 
 
     # Instruction memory
@@ -420,7 +429,10 @@ class MIPS_lite:
         self.pc = self.npc
 
         # Print register contents
-        print(self.R)
+        logging.debug(f'Registers: {self.R}')
 
         # Increment clock
         self.clk += 1
+
+        # Check if program should quit
+        return self.pipeline.count(None) == len(self.pipeline)

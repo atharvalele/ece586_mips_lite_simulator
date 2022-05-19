@@ -68,4 +68,6 @@ if __name__ == '__main__':
             step = input('')
         
         # CPU Loop
-        cpu_inst.do_cpu_things()
+        halt = cpu_inst.do_cpu_things()
+        if halt == True:
+            break
