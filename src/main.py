@@ -71,3 +71,38 @@ if __name__ == '__main__':
         halt = cpu_inst.do_cpu_things()
         if halt == True:
             break
+
+    # Sort modified lists
+    cpu_inst.modified_addrs.sort()
+    cpu_inst.modified_regs.sort()
+    
+    # Print instruction counts
+    print('Instruction Counts:')
+    print(f'\nTotal Instructions: {cpu_inst.instr_count}')
+    print(f'Arithmetic Instructions: {cpu_inst.arithmetic_instr_count}')
+    print(f'Logical Instructions: {cpu_inst.logical_instr_count}')
+    print(f'Memory Access Instructions: {cpu_inst.mem_instr_count}')
+    print(f'Control Transfer Instructions: {cpu_inst.cntrl_instr_count}')
+
+    # Print modified registers
+    print('\nFinal Register State:')
+    print(f'PC: {cpu_inst.pc}')
+    for reg in cpu_inst.modified_regs:
+        print(f'R{reg}: {cpu_inst.R[reg]}')
+    
+    # Print stalls
+    print(f'\nTotal stalls: {cpu_inst.stall_count}')
+
+    # Print modified addresses
+    print('\nModified Addresses:')
+    for addr in cpu_inst.modified_addrs:
+        # Get 4 bytes from memory
+        d_array = cpu_inst.mem.read_n(addr, 4)
+
+        # 'big' here means that that first byte in the array is MSB
+        data = int.from_bytes(bytes=d_array, byteorder='big', signed=False)
+
+        print(f'Addr: {addr}, Data: {data}')
+    
+    # Print total clock cycles
+    print(f'\nTotal clock cycles: {cpu_inst.clk}')

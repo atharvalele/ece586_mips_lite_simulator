@@ -183,6 +183,23 @@ class MIPS_lite:
         # Fill memory with data
         self.mem.write_n(0, parser(self.mem_fname))
 
+            # Variables needed for final output prints
+        self.modified_regs = []
+        self.modified_addrs = []
+        self.instr_count = 0
+        self.arithmetic_instr_count = 0
+        self.logical_instr_count = 0
+        self.mem_instr_count = 0
+        self.cntrl_instr_count = 0
+        self.stall_count = 0
+
+    # Function to add to a list, and keep it unique
+    def add_to_list(self, lst, reg):
+        if reg not in lst:
+            lst.append(reg)
+            lst.sort()
+        return lst
+
     # Data Hazard Check
     def check_data_hazard(self):
         if self.pipeline[1] is not None:
@@ -201,6 +218,7 @@ class MIPS_lite:
                     # with EX stage if we are going to stall for 1 cycle
                     self.data_hazard = True
                     self.num_clocks_to_stall = 1
+                    # self.stall_count += 1
                     return
 
             # Check if there are conflicts with the EX stage
@@ -213,6 +231,7 @@ class MIPS_lite:
 
                     self.data_hazard = True
                     self.num_clocks_to_stall = 2
+                    # self.stall_count += 1
                     return
 
             # No conflicts found
@@ -274,6 +293,9 @@ class MIPS_lite:
     # Instruction execute
     def execute(self):
         if self.pipeline[2] is not None:
+            # Increment instruction count
+            self.instr_count += 1
+
             logging.debug(self.pipeline[2])
             # Grab imm, A, B operands
             self.A = self.pipeline[2].A
@@ -284,51 +306,66 @@ class MIPS_lite:
             # Add and Add Immediate
             if self.pipeline[2].opcode == Instruction.R_type_instr.get('ADD'):
                 self.pipeline[2].alu_out = self.A + self.B
+                self.arithmetic_instr_count += 1
             elif self.pipeline[2].opcode == Instruction.I_type_instr.get('ADDI'):
                 self.pipeline[2].alu_out = self.A + self.imm
+                self.arithmetic_instr_count += 1
             
             # Sub and Sub Immediate
             elif self.pipeline[2].opcode == Instruction.R_type_instr.get('SUB'):
                 self.pipeline[2].alu_out = self.A - self.B
+                self.arithmetic_instr_count += 1
             elif self.pipeline[2].opcode == Instruction.I_type_instr.get('SUBI'):
                 self.pipeline[2].alu_out = self.A - self.imm
+                self.arithmetic_instr_count += 1
                 
             # Mul and Mul Immediate
             elif self.pipeline[2].opcode == Instruction.R_type_instr.get('MUL'):
                 self.pipeline[2].alu_out = self.A * self.B
+                self.arithmetic_instr_count += 1
             elif self.pipeline[2].opcode == Instruction.I_type_instr.get('MULI'):
                 self.pipeline[2].alu_out = self.A * self.imm
+                self.arithmetic_instr_count += 1
             
             # AND and AND Immediate
             elif self.pipeline[2].opcode == Instruction.R_type_instr.get('AND'):
                 self.pipeline[2].alu_out = self.A & self.B
+                self.logical_instr_count += 1
             elif self.pipeline[2].opcode == Instruction.I_type_instr.get('ANDI'):
                 self.pipeline[2].alu_out = self.A & self.imm
+                self.logical_instr_count += 1
 
             # OR and OR Immediate
             elif self.pipeline[2].opcode == Instruction.R_type_instr.get('OR'):
                 self.pipeline[2].alu_out = self.A | self.B
+                self.logical_instr_count += 1
             elif self.pipeline[2].opcode == Instruction.I_type_instr.get('ORI'):
                 self.pipeline[2].alu_out = self.A | self.imm
+                self.logical_instr_count += 1
                 
             # XOR and XOR Immediate
             elif self.pipeline[2].opcode == Instruction.R_type_instr.get('XOR'):
                 self.pipeline[2].alu_out = self.A ^ self.B
+                self.logical_instr_count += 1
             elif self.pipeline[2].opcode == Instruction.I_type_instr.get('XORI'):
                 self.pipeline[2].alu_out = self.A ^ self.imm
+                self.logical_instr_count += 1
 
             # LDW 
             elif self.pipeline[2].opcode == Instruction.I_type_instr.get('LDW'):
                 self.pipeline[2].ref_addr = self.A + self.imm
+                self.mem_instr_count += 1
 
             # STW
             elif self.pipeline[2].opcode == Instruction.I_type_instr.get('STW'):
                 self.pipeline[2].ref_addr = self.A + self.imm
+                self.mem_instr_count += 1
 
             #BZ
             elif self.pipeline[2].opcode == Instruction.I_type_instr.get('BZ'):
                 if self.A == 0:
                     self.npc = self.pc - (2 * 4) + (4 * self.imm)
+                self.cntrl_instr_count += 1
           
             #BEQ
             elif self.pipeline[2].opcode == Instruction.I_type_instr.get('BEQ'):
@@ -337,15 +374,18 @@ class MIPS_lite:
                     self.flush_pipeline()
                 else :
                     self.npc = self.pc + 4
+                self.cntrl_instr_count += 1
             
             #JR
             elif self.pipeline[2].opcode == Instruction.I_type_instr.get('JR'):
                 self.npc = self.R[self.pipeline[2].rs]
                 self.flush_pipeline()
+                self.cntrl_instr_count += 1
 
             #HALT
             elif self.pipeline[2].opcode == Instruction.I_type_instr.get('HALT'):
                 self.halt_flag = True
+                self.cntrl_instr_count += 1
 
             else:
                 pass
@@ -366,6 +406,9 @@ class MIPS_lite:
                 int_data = int(self.pipeline[3].B)
                 tobyte = int_data.to_bytes(4, 'big')
                 data_array = self.mem.write_n(self.pipeline[3].ref_addr, tobyte)
+                # Add to modified memory addrs
+                if self.pipeline[3].ref_addr not in self.modified_addrs:
+                    self.modified_addrs.append(self.pipeline[3].ref_addr)
 
     # Instruction writeback
     def writeback(self):
@@ -373,6 +416,9 @@ class MIPS_lite:
             if self.pipeline[4].opcode in Instruction.I_type_instr.values():
                 if self.pipeline[4].opcode == Instruction.I_type_instr.get('LDW'):
                     self.R[self.pipeline[4].rt] = self.pipeline[4].B
+                    # Add to modified reg list
+                    if self.pipeline[4].rt not in self.modified_regs:
+                        self.modified_regs.append(self.pipeline[4].rt)
                 elif self.pipeline[4].opcode == Instruction.I_type_instr.get('STW'):
                     pass
                 elif self.pipeline[4].opcode == Instruction.I_type_instr.get('BZ'):
@@ -383,8 +429,14 @@ class MIPS_lite:
                     pass
                 else:
                     self.R[self.pipeline[4].rt] = self.pipeline[4].alu_out
+                    # Add to modified reg list
+                    if self.pipeline[4].rt not in self.modified_regs:
+                        self.modified_regs.append(self.pipeline[4].rt)
             else:
                 self.R[self.pipeline[4].rd] = self.pipeline[4].alu_out
+                # Add to modified reg list
+                if self.pipeline[4].rd not in self.modified_regs:
+                    self.modified_regs.append(self.pipeline[4].rd)
 
 
     # CPU Operation per clock cycle
@@ -399,6 +451,7 @@ class MIPS_lite:
 
             # Decrement hazard stall clocks
             self.num_clocks_to_stall -= 1
+            self.stall_count += 1
             if self.num_clocks_to_stall == 0:
                 self.control_hazard = False
 
