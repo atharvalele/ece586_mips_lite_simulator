@@ -79,15 +79,17 @@ class Instruction:
             info = '\nInstruction: 0x%08x' % self.instr + ' : ' + format(self.instr, '#034b')
             info += '\nOpcode: ' + hex(self.opcode) + ' : ' + format(self.opcode, '#08b')
             info += '\nType: ' + self.type
-            info += '\nRs: ' + hex(self.rs) + ' : ' + format(self.rs, '#07b')
-            info += '\nRt: ' + hex(self.rt) + ' : ' + format(self.rt, '#07b')
+            # info += '\nRs: ' + hex(self.rs) + ' : ' + format(self.rs, '#07b')
+            # info += '\nRt: ' + hex(self.rt) + ' : ' + format(self.rt, '#07b')
 
             if self.type == 'R':
-                info += '\nRd: ' + hex(self.rd) + ' : ' + format(self.rd, '#07b')
-                info += '\nName: ' + self.find_key(self.R_type_instr, self.opcode)
+                # info += '\nRd: ' + hex(self.rd) + ' : ' + format(self.rd, '#07b')
+                # info += '\nName: ' + self.find_key(self.R_type_instr, self.opcode)
+                info += f'\n{self.find_key(self.R_type_instr, self.opcode)} R{self.rs}, R{self.rt}, R{self.rd}'
             else:
-                info += '\nImm: ' + hex(self.imm) + ' : ' + format(self.imm, '#013b')
-                info += '\nName: ' + self.find_key(self.I_type_instr, self.opcode)
+                # info += '\nImm: ' + hex(self.imm) + ' : ' + format(self.imm, '#013b')
+                # info += '\nName: ' + self.find_key(self.I_type_instr, self.opcode)
+                info += f'\n{self.find_key(self.I_type_instr, self.opcode)} R{self.rs}, R{self.rt}, {hex(self.imm)}'
         else:
             info = 'Not decoded/Empty'
         
@@ -128,8 +130,8 @@ class Instruction:
         # Rs is always a source register
         src_regs.append(self.rs)
 
-        # Rt is a source reg if it is a R-type instruction
-        if self.opcode in Instruction.R_type_instr:
+        # Rt is a source reg if it is a R-type instruction or BEQ
+        if ((self.opcode in Instruction.R_type_instr) or (self.opcode == Instruction.I_type_instr.get('BEQ'))):
             src_regs.append(self.rt)
 
         return src_regs
@@ -213,8 +215,12 @@ class MIPS_lite:
             # No conflicts found
             self.data_hazard = False
             self.num_clocks_to_stall = 0
-    
-  
+
+    # Flushing pipeline
+    def flush_pipeline(self):
+        logging.debug('EX: Pipeline flushed')
+        self.pipeline[0] = None
+        self.pipeline[1] = None
 
     # Instruction fetch
     def fetch(self):
@@ -261,10 +267,12 @@ class MIPS_lite:
     # Instruction execute
     def execute(self):
         if self.pipeline[2] is not None:
+            logging.debug(self.pipeline[2])
             # Grab imm, A, B operands
             self.A = self.pipeline[2].A
             self.B = self.pipeline[2].B
             self.imm = self.pipeline[2].imm_ext
+            logging.debug(f'EX: A = {self.pipeline[2].A}, B = {self.pipeline[2].B}, Imm = {self.imm}')
 
             # Add and Add Immediate
             if self.pipeline[2].opcode == Instruction.R_type_instr.get('ADD'):
@@ -311,20 +319,29 @@ class MIPS_lite:
                 self.pipeline[2].ref_addr = self.A + self.imm
 
             #BZ
+            elif self.pipeline[2].opcode == Instruction.I_type_instr.get('BZ'):
+                if self.A == 0:
+                    self.npc = self.pc - (2 * 4) + (4 * self.imm)
           
             #BEQ
             elif self.pipeline[2].opcode == Instruction.I_type_instr.get('BEQ'):
                 if self.A == self.B:
-                    self.npc = self.pc + (4 * self.imm)
+                    self.npc = self.pc - (2 * 4) + (4 * self.imm)
+                    self.flush_pipeline()
                 else :
                     self.npc = self.pc + 4
-                
             
             #JR
             elif self.pipeline[2].opcode == Instruction.I_type_instr.get('JR'):
-                self.npc = self.A
+                self.npc = self.R[self.pipeline[2].rs]
+                self.flush_pipeline()
 
             #HALT
+
+            else:
+                pass
+        else:
+            print('NONE')
 
 
     # Instruction memory
@@ -343,10 +360,22 @@ class MIPS_lite:
 
     # Instruction writeback
     def writeback(self):
-        # Placeholder
         if self.pipeline[4] is not None:
-            if self.pipeline[4].opcode == Instruction.I_type_instr.get('LDW'):
-                self.R[self.pipeline[4].rt] = self.pipeline[4].B
+            if self.pipeline[4].opcode in Instruction.I_type_instr.values():
+                if self.pipeline[4].opcode == Instruction.I_type_instr.get('LDW'):
+                    self.R[self.pipeline[4].rt] = self.pipeline[4].B
+                elif self.pipeline[4].opcode == Instruction.I_type_instr.get('STW'):
+                    pass
+                elif self.pipeline[4].opcode == Instruction.I_type_instr.get('BZ'):
+                    pass
+                elif self.pipeline[4].opcode == Instruction.I_type_instr.get('BEQ'):
+                    pass
+                elif self.pipeline[4].opcode == Instruction.I_type_instr.get('JR'):
+                    pass
+                else:
+                    self.R[self.pipeline[4].rt] = self.pipeline[4].alu_out
+            else:
+                self.R[self.pipeline[4].rd] = self.pipeline[4].alu_out
 
 
     # CPU Operation per clock cycle
@@ -362,14 +391,14 @@ class MIPS_lite:
             # Decrement hazard stall clocks
             self.num_clocks_to_stall -= 1
             if self.num_clocks_to_stall == 0:
-                self.data_hazard = False
                 self.control_hazard = False
+
         else:
             # [i0, i1, i2, i3, i4] --> [None, i0, i1, i2, i3]
             self.pipeline = [None] + self.pipeline[0:-1]
 
         # Debug print clock
-        logging.debug('Clock: ' + str(self.clk))
+        logging.debug('---------- Clock: ' + str(self.clk) + ' ----------')
 
         # 5-stage pipeline
         self.fetch()
@@ -378,8 +407,20 @@ class MIPS_lite:
         self.memory()
         self.writeback()
 
+        # If in a hazard condition, read register values need to be updated
+        # when the hazard condition is over
+        if self.hazard_flag == True and self.num_clocks_to_stall == 0:
+            self.data_hazard = False
+            if self.pipeline[1] is not None:
+                self.pipeline[1].A = numpy.int32(self.R[self.pipeline[1].rs])
+                self.pipeline[1].B = numpy.int32(self.R[self.pipeline[1].rt])
+                logging.debug('DH: Updated Operand Values = ' + str(self.pipeline[1].A) + ', ' + str(self.pipeline[1].B))
+
         # Set PC to updated value
         self.pc = self.npc
+
+        # Print register contents
+        print(self.R)
 
         # Increment clock
         self.clk += 1
