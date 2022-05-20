@@ -168,7 +168,6 @@ class MIPS_lite:
         # Hazard flags
         self.hazard_flag = False
         self.data_hazard = False
-        self.control_hazard = False
         self.num_clocks_to_stall = 0
 
         # Register declaration
@@ -456,7 +455,7 @@ class MIPS_lite:
     # CPU Operation per clock cycle
     def do_cpu_things(self) -> None:
         # Shift instructions in the pipeline according to hazard conditions
-        self.hazard_flag = self.data_hazard or self.control_hazard
+        self.hazard_flag = self.data_hazard
 
         if (self.hazard_flag == True) and (self.num_clocks_to_stall > 0):
             # Pipeline will be blank at EX stage
@@ -466,8 +465,6 @@ class MIPS_lite:
             # Decrement hazard stall clocks
             self.num_clocks_to_stall -= 1
             self.stall_count += 1
-            if self.num_clocks_to_stall == 0:
-                self.control_hazard = False
 
         else:
             # [i0, i1, i2, i3, i4] --> [None, i0, i1, i2, i3]
