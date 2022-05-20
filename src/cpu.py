@@ -72,6 +72,14 @@ class Instruction:
             if val == value: return key
         return 'None'
 
+    # Get decoded instr
+    def get_instr(self):
+        if self.opcode is not None:
+            if self.type == 'R':
+                return  f'\n{self.find_key(self.R_type_instr, self.opcode)} R{self.rd}, R{self.rs}, R{self.rt}'
+            else:
+                return f'\n{self.find_key(self.I_type_instr, self.opcode)} R{self.rt}, R{self.rs}, {hex(self.imm)}'
+
     # Override for print()
     def __str__(self):
         if self.opcode is not None:
@@ -85,11 +93,11 @@ class Instruction:
             if self.type == 'R':
                 # info += '\nRd: ' + hex(self.rd) + ' : ' + format(self.rd, '#07b')
                 # info += '\nName: ' + self.find_key(self.R_type_instr, self.opcode)
-                info += f'\n{self.find_key(self.R_type_instr, self.opcode)} R{self.rs}, R{self.rt}, R{self.rd}'
+                info += f'\n{self.find_key(self.R_type_instr, self.opcode)} R{self.rd}, R{self.rs}, R{self.rt}'
             else:
                 # info += '\nImm: ' + hex(self.imm) + ' : ' + format(self.imm, '#013b')
                 # info += '\nName: ' + self.find_key(self.I_type_instr, self.opcode)
-                info += f'\n{self.find_key(self.I_type_instr, self.opcode)} R{self.rs}, R{self.rt}, {hex(self.imm)}'
+                info += f'\n{self.find_key(self.I_type_instr, self.opcode)} R{self.rt}, R{self.rs}, {hex(self.imm)}'
         else:
             info = 'Not decoded/Empty'
         
@@ -144,7 +152,7 @@ class MIPS_lite:
         self.mode = mode
         self.mem_fname = mem_fname
         self.out_fname = out_fname
-        
+
         # Halt flag
         self.halt_flag = False
 
@@ -385,6 +393,7 @@ class MIPS_lite:
             #HALT
             elif self.pipeline[2].opcode == Instruction.I_type_instr.get('HALT'):
                 self.halt_flag = True
+                self.flush_pipeline()
                 self.cntrl_instr_count += 1
 
             else:
@@ -401,11 +410,13 @@ class MIPS_lite:
                 data_array = self.mem.read_n(self.pipeline[3].ref_addr, 4)
                 data = int.from_bytes(bytes=data_array, byteorder='big', signed=True)
                 self.pipeline[3].B = numpy.int32(data)
+                logging.debug(f'MEM: Loaded R{self.pipeline[3].get_dest_reg()} with {self.pipeline[3].B}')
             elif self.pipeline[3].opcode == Instruction.I_type_instr.get('STW'):
                 # Write data array to memory 
                 int_data = int(self.pipeline[3].B)
                 tobyte = int_data.to_bytes(4, 'big')
                 data_array = self.mem.write_n(self.pipeline[3].ref_addr, tobyte)
+                logging.debug(f'MEM: Stored {int_data} to address {self.pipeline[3].ref_addr}')
                 # Add to modified memory addrs
                 if self.pipeline[3].ref_addr not in self.modified_addrs:
                     self.modified_addrs.append(self.pipeline[3].ref_addr)
@@ -416,6 +427,7 @@ class MIPS_lite:
             if self.pipeline[4].opcode in Instruction.I_type_instr.values():
                 if self.pipeline[4].opcode == Instruction.I_type_instr.get('LDW'):
                     self.R[self.pipeline[4].rt] = self.pipeline[4].B
+                    logging.debug(f'WB: R{self.pipeline[4].rt} = {self.pipeline[4].B}')
                     # Add to modified reg list
                     if self.pipeline[4].rt not in self.modified_regs:
                         self.modified_regs.append(self.pipeline[4].rt)
@@ -429,11 +441,13 @@ class MIPS_lite:
                     pass
                 else:
                     self.R[self.pipeline[4].rt] = self.pipeline[4].alu_out
+                    logging.debug(f'WB: R{self.pipeline[4].rt} = {self.pipeline[4].alu_out}')
                     # Add to modified reg list
                     if self.pipeline[4].rt not in self.modified_regs:
                         self.modified_regs.append(self.pipeline[4].rt)
             else:
                 self.R[self.pipeline[4].rd] = self.pipeline[4].alu_out
+                logging.debug(f'WB: R{self.pipeline[4].rd} = {self.pipeline[4].alu_out}')
                 # Add to modified reg list
                 if self.pipeline[4].rd not in self.modified_regs:
                     self.modified_regs.append(self.pipeline[4].rd)
