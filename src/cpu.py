@@ -136,11 +136,13 @@ class Instruction:
         src_regs = []
 
         # Rs is always a source register
-        src_regs.append(self.rs)
+        if self.rs != 0:
+            src_regs.append(self.rs)
 
         # Rt is a source reg if it is a R-type instruction or BEQ
         if ((self.opcode in Instruction.R_type_instr) or (self.opcode == Instruction.I_type_instr.get('BEQ'))):
-            src_regs.append(self.rt)
+            if self.rt != 0:
+                src_regs.append(self.rt)
 
         return src_regs
     
@@ -225,7 +227,6 @@ class MIPS_lite:
                     # with EX stage if we are going to stall for 1 cycle
                     self.data_hazard = True
                     self.num_clocks_to_stall = 1
-                    # self.stall_count += 1
                     return
 
             # Check if there are conflicts with the EX stage
@@ -238,7 +239,6 @@ class MIPS_lite:
 
                     self.data_hazard = True
                     self.num_clocks_to_stall = 2
-                    # self.stall_count += 1
                     return
 
             # No conflicts found
@@ -278,6 +278,10 @@ class MIPS_lite:
     def decode(self):
         # Do not decode if hazard has been detected
         if self.hazard_flag == True:
+            return
+        
+        # Do not decode if halt is true
+        if self.halt_flag == True:
             return
         
         if self.pipeline[1] is not None:
@@ -393,6 +397,8 @@ class MIPS_lite:
             elif self.pipeline[2].opcode == Instruction.I_type_instr.get('HALT'):
                 self.halt_flag = True
                 self.flush_pipeline()
+                self.hazard_flag = False
+                self.num_clocks_to_stall = 0
                 self.cntrl_instr_count += 1
 
             else:
@@ -471,7 +477,7 @@ class MIPS_lite:
             self.pipeline = [None] + self.pipeline[0:-1]
 
         # Debug print clock
-        logging.debug('---------- Clock: ' + str(self.clk) + ' ----------')
+        logging.debug('\n\n---------- Clock: ' + str(self.clk) + '\tPC: ' + str(self.pc) + ' ----------')
 
         # 5-stage pipeline
         self.fetch()
