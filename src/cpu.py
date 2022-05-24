@@ -140,7 +140,7 @@ class Instruction:
             src_regs.append(self.rs)
 
         # Rt is a source reg if it is a R-type instruction or BEQ
-        if ((self.opcode in Instruction.R_type_instr) or (self.opcode == Instruction.I_type_instr.get('BEQ'))):
+        if ((self.opcode in Instruction.R_type_instr.values()) or (self.opcode == Instruction.I_type_instr.get('BEQ'))):
             if self.rt != 0:
                 src_regs.append(self.rt)
 
@@ -227,7 +227,6 @@ class MIPS_lite:
                     # with EX stage if we are going to stall for 1 cycle
                     self.data_hazard = True
                     self.num_clocks_to_stall = 1
-                    return
 
             # Check if there are conflicts with the EX stage
             if self.pipeline[2] is not None:
@@ -239,11 +238,10 @@ class MIPS_lite:
 
                     self.data_hazard = True
                     self.num_clocks_to_stall = 2
-                    return
 
             # No conflicts found
-            self.data_hazard = False
-            self.num_clocks_to_stall = 0
+            # self.data_hazard = False
+            # self.num_clocks_to_stall = 0
 
     # Flushing pipeline
     def flush_pipeline(self):
@@ -270,6 +268,9 @@ class MIPS_lite:
 
         # Create an instruction object and add it to the pipeline
         self.pipeline[0] = Instruction(data)
+
+        # Saving pc for every instruction fetch
+        self.pipeline[0].pc = self.pc
 
         # Update PC to PC + 4
         self.npc = self.pc + 4
@@ -375,13 +376,13 @@ class MIPS_lite:
             #BZ
             elif self.pipeline[2].opcode == Instruction.I_type_instr.get('BZ'):
                 if self.A == 0:
-                    self.npc = self.pc - (2 * 4) + (4 * self.imm)
+                    self.npc = self.pipeline[2].pc + (4 * self.imm)
                 self.cntrl_instr_count += 1
           
             #BEQ
             elif self.pipeline[2].opcode == Instruction.I_type_instr.get('BEQ'):
                 if self.A == self.B:
-                    self.npc = self.pc - (2 * 4) + (4 * self.imm)
+                    self.npc = self.pipeline[2].pc + (4 * self.imm)
                     self.flush_pipeline()
                 else :
                     self.npc = self.pc + 4
@@ -415,7 +416,7 @@ class MIPS_lite:
                 data_array = self.mem.read_n(self.pipeline[3].ref_addr, 4)
                 data = int.from_bytes(bytes=data_array, byteorder='big', signed=True)
                 self.pipeline[3].B = numpy.int32(data)
-                logging.debug(f'MEM: Loaded R{self.pipeline[3].get_dest_reg()} with {self.pipeline[3].B}')
+                logging.debug(f'MEM: Loaded R{self.pipeline[3].get_dest_reg()} with {self.pipeline[3].B} from {self.pipeline[3].ref_addr}')
             elif self.pipeline[3].opcode == Instruction.I_type_instr.get('STW'):
                 # Write data array to memory 
                 int_data = int(self.pipeline[3].B)
