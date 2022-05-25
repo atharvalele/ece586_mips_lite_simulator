@@ -58,7 +58,7 @@ def imm_check(imm: str):
 
 def convert_to_mem(output: str, command):
     # Extract tokens from list
-    o_file = open(output,'a') 
+    o_file = open(output, 'w') 
     for i in command:
         op_list = i.split()
         op, instr_type = op_code_check(op_list[0])
@@ -111,8 +111,8 @@ def convert_to_mem(output: str, command):
                 rt = r_check(op_list[1][:-1])
                 imm = bin(imm_check(op_list[3])).replace("0b","").zfill(16)
             else:
-                rs = r_check(op_list[1][:-1])
-                rt = r_check(op_list[2][:-1])
+                rs = r_check(op_list[2][:-1])
+                rt = r_check(op_list[1][:-1])
                 imm = bin(imm_check(op_list[3])).replace("0b","").zfill(16)
             # Convert to the correct format for memory image
             trace = bin(op).replace("0b","").zfill(6) + rs + rt + imm
@@ -141,7 +141,7 @@ if __name__ == '__main__':
     f = open(sys.argv[1], 'r')
 
     # Read all the lines as string -- skip blank lines
-    command_list = [line for line in f.readlines() if line.strip()]
+    command_list = [line for line in f.readlines() if line.strip() and not line.startswith('#')]
 
     # Print to test all commands were picked up
     print(command_list)
