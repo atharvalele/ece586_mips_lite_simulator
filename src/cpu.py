@@ -252,6 +252,7 @@ class MIPS_lite:
             elif self.pipeline[2].opcode == Instruction.I_type_instr.get('BZ'):
                 if self.A == 0:
                     self.npc = self.pipeline[2].pc + (4 * self.imm)
+                    self.flush_pipeline()
                 self.cntrl_instr_count += 1
           
             #BEQ
