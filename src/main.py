@@ -8,6 +8,7 @@ Author(s): Atharva Lele <atharva@pdx.edu>
 
 import config
 import cpu
+import cpu_func
 import logging
 import os
 import sys
@@ -60,7 +61,10 @@ if __name__ == '__main__':
         exit(1)
 
     # Instantiate CPU
-    cpu_inst = cpu.MIPS_lite(sim_mode, memory_image_fname, output_fname)
+    if sim_mode == 'func':
+        cpu_inst = cpu_func.MIPS_lite_func(memory_image_fname, output_fname)
+    else:
+        cpu_inst = cpu.MIPS_lite(sim_mode, memory_image_fname, output_fname)
 
     # Main loop
     while True:
@@ -91,7 +95,8 @@ if __name__ == '__main__':
         print(f'R{reg}: {cpu_inst.R[reg]}')
     
     # Print stalls
-    print(f'\nTotal stalls: {cpu_inst.stall_count}')
+    if sim_mode != 'func':
+        print(f'\nTotal stalls: {cpu_inst.stall_count}')
 
     # Print modified addresses
     print('\nModified Addresses:')
@@ -105,4 +110,5 @@ if __name__ == '__main__':
         print(f'Addr: {addr}, Data: {data}')
     
     # Print total clock cycles
-    print(f'\nTotal clock cycles: {cpu_inst.clk}')
+    if sim_mode != 'func':
+        print(f'\nTotal clock cycles: {cpu_inst.clk}')
