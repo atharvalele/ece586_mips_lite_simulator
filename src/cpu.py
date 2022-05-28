@@ -55,11 +55,14 @@ class MIPS_lite:
         self.A = numpy.int32(0)
         self.B = numpy.int32(0)
         self.imm = numpy.int32(0)
-        self.alu_out = 0
         self.R = [0] * 32
 
         # Pipeline - initialized as a null list for now
         self.pipeline = [None, None, None, None, None]
+
+        # Forwarding Registers
+        self.fwd_A = numpy.int32(0)
+        self.fwd_B = numpy.int32(0)
 
         # Instantiate memory object
         self.mem = memory.Memory(config.MEM_SIZE)
