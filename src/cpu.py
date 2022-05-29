@@ -61,9 +61,9 @@ class MIPS_lite:
         self.pipeline = [None, None, None, None, None]
 
         # Forwarding Registers
-        self.fwd_A = numpy.int32(0)
-        self.fwd_B = numpy.int32(0)
-
+        self.mem_out = numpy.int32(0)
+        self.alu_out = numpy.int32(0)
+      
         # Instantiate memory object
         self.mem = memory.Memory(config.MEM_SIZE)
 
@@ -101,25 +101,55 @@ class MIPS_lite:
                     logging.debug('DH: Hazard detected with MEM stage')
                     logging.debug(f'DH: Dest: {dest_reg}, SRCS: {source_regs}')
 
-                    # Set flags - we don't need to check for conflicts
-                    # with EX stage if we are going to stall for 1 cycle
-                    self.data_hazard = True
-                    self.num_clocks_to_stall = 1
+                    if self.mode == 'fwd':
+                        if dest_reg == self.pipeline[1].rs:
+                            self.pipeline[1].fwd_A = 1
+                        elif dest_reg == self.pipeline[1].rt:
+                            self.pipeline[1].fwd_B = 1
+                        logging.debug(f'DH: fwdA: {self.pipeline[1].fwd_A}, fwdB: {self.pipeline[1].fwd_B}')
+
+                        self.data_hazard = False
+                        self.num_clocks_to_stall = 0
+                    
+                    else:
+                        # Set flags - we don't need to check for conflicts
+                        # with EX stage if we are going to stall for 1 cycle
+                        self.data_hazard = True
+                        self.num_clocks_to_stall = 1
 
             # Check if there are conflicts with the EX stage
             if self.pipeline[2] is not None:
                 dest_reg = self.pipeline[2].get_dest_reg()
-
+                  
                 if dest_reg in source_regs:
                     logging.debug('DH: Hazard detected with EX stage')
                     logging.debug(f'DH: Dest: {dest_reg}, SRCS: {source_regs}')
 
-                    self.data_hazard = True
-                    self.num_clocks_to_stall = 2
+                    if self.mode == 'fwd':
+                        # Back to bacK LDW - STW
+                        if self.pipeline[2].opcode == Instruction.I_type_instr.get('LDW') and \
+                             self.pipeline[1].opcode == Instruction.I_type_instr.get('STW') and \
+                                 self.pipeline[1].rt == dest_reg:
+                            self.pipeline[1].mem_to_mem = 1
 
-            # No conflicts found
-            # self.data_hazard = False
-            # self.num_clocks_to_stall = 0
+
+                        if self.pipeline[2].opcode != Instruction.I_type_instr.get('LDW'):
+                            if dest_reg == self.pipeline[1].rs:
+                                self.pipeline[1].fwd_A = 2
+                            elif dest_reg == self.pipeline[1].rt:
+                                self.pipeline[1].fwd_B = 2
+                            logging.debug(f'DH: fwdA: {self.pipeline[1].fwd_A}, fwdB: {self.pipeline[1].fwd_B}')
+                            self.data_hazard = False
+                            self.num_clocks_to_stall = 0
+                        else:
+                            #If instruction is load and mode is fwd, stall for 1 cycle
+                            self.data_hazard = True
+                            self.num_clocks_to_stall = 1
+
+                    else: 
+                        self.data_hazard = True
+                        self.num_clocks_to_stall = 2
+
 
     # Flushing pipeline
     def flush_pipeline(self):
@@ -156,9 +186,19 @@ class MIPS_lite:
     # Instruction decode
     def decode(self):
         # Do not decode if hazard has been detected
-        if self.hazard_flag == True:
+        if self.hazard_flag == True and self.pipeline[1] is not None:
+
+            # Check if *anything* needs to be read for a pending forward
+            if self.pipeline[1].fwd_A == 1:
+                self.pipeline[1].A = self.mem_out
+                self.pipeline[1].fwd_A = 0
+            elif self.pipeline[1].fwd_B == 1:
+                self.pipeline[1].B = self.mem_out
+                self.pipeline[1].fwd_B = 0
+            # Check for hazards
+            self.check_data_hazard()
             return
-        
+   
         # Do not decode if halt is true
         if self.halt_flag == True:
             return
@@ -187,9 +227,29 @@ class MIPS_lite:
             self.instr_count += 1
 
             logging.debug(self.pipeline[2])
-            # Grab imm, A, B operands
-            self.A = self.pipeline[2].A
-            self.B = self.pipeline[2].B
+
+            #Grab operands with fwd
+            if self.mode == 'fwd':
+                if self.pipeline[2].fwd_A == 0:
+                    self.A = self.pipeline[2].A
+                elif self.pipeline[2].fwd_A == 1:
+                    self.A = self.mem_out
+                elif self.pipeline[2].fwd_A == 2:
+                    self.A = self.alu_out
+                
+                if self.pipeline[2].fwd_B == 0:
+                    self.B = self.pipeline[2].B
+                elif self.pipeline[2].fwd_B == 1:
+                    self.B = self.mem_out
+                elif self.pipeline[2].fwd_B == 2:
+                    self.B = self.alu_out
+
+            # no-fwd
+            else:
+                # Grab imm, A, B operands
+                self.A = self.pipeline[2].A
+                self.B = self.pipeline[2].B
+
             self.imm = self.pipeline[2].imm_ext
             logging.debug(f'EX: A = {self.pipeline[2].A}, B = {self.pipeline[2].B}, Imm = {self.imm}')
 
@@ -283,6 +343,9 @@ class MIPS_lite:
 
             else:
                 pass
+            
+            #Copy data to forwarding register
+            self.alu_out = self.pipeline[2].alu_out
         else:
             logging.debug('EX: Empty')
 
@@ -290,21 +353,29 @@ class MIPS_lite:
     # Instruction memory
     def memory(self):
         if self.pipeline[3] is not None:
+            logging.debug(self.pipeline[3])
             if self.pipeline[3].opcode == Instruction.I_type_instr.get('LDW'):
                 # Extract data array from memory
                 data_array = self.mem.read_n(self.pipeline[3].ref_addr, 4)
                 data = int.from_bytes(bytes=data_array, byteorder='big', signed=True)
                 self.pipeline[3].B = numpy.int32(data)
+                self.mem_out = self.pipeline[3].B
                 logging.debug(f'MEM: Loaded R{self.pipeline[3].get_dest_reg()} with {self.pipeline[3].B} from {self.pipeline[3].ref_addr}')
             elif self.pipeline[3].opcode == Instruction.I_type_instr.get('STW'):
                 # Write data array to memory 
-                int_data = int(self.pipeline[3].B)
+                if self.mode == 'fwd' and self.pipeline[3].mem_to_mem == 1:
+                    int_data = self.mem_out
+                else:
+                    int_data = int(self.pipeline[3].B)
+
                 tobyte = int_data.to_bytes(4, 'big')
                 data_array = self.mem.write_n(self.pipeline[3].ref_addr, tobyte)
                 logging.debug(f'MEM: Stored {int_data} to address {self.pipeline[3].ref_addr}')
                 # Add to modified memory addrs
                 if self.pipeline[3].ref_addr not in self.modified_addrs:
                     self.modified_addrs.append(self.pipeline[3].ref_addr)
+            else:
+                self.mem_out = self.pipeline[3].alu_out
 
     # Instruction writeback
     def writeback(self):

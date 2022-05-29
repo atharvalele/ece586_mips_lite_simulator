@@ -53,6 +53,11 @@ class Instruction:
         self.imm_ext = numpy.int32(0)
         self.ref_addr = numpy.int32(0)
         self.alu_out = numpy.int32(0)
+        self.mem_to_mem = 0
+
+        # Forwarding flags
+        self.fwd_A = 0
+        self.fwd_B = 0
 
     # Get 'key' for value
     def find_key(self, input_dict, value):
