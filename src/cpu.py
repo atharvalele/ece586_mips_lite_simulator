@@ -337,6 +337,10 @@ class MIPS_lite:
             elif self.pipeline[2].opcode == Instruction.I_type_instr.get('HALT'):
                 self.halt_flag = True
                 self.flush_pipeline()
+                # Undo hazard detection and decrement PC for 2 "invalid" instructions
+                # that were fetched
+                self.pc -= 2 * 4
+                self.npc -= 2 * 4
                 self.hazard_flag = False
                 self.num_clocks_to_stall = 0
                 self.cntrl_instr_count += 1
@@ -456,4 +460,10 @@ class MIPS_lite:
         self.clk += 1
 
         # Check if program should quit
-        return self.pipeline.count(None) == len(self.pipeline)
+        if self.pipeline.count(None) == len(self.pipeline):
+            # Decrement falsely counted clock
+            # Last cycle was essentially empty
+            self.clk -= 1
+            return True
+        else:
+            return False
