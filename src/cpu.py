@@ -24,11 +24,10 @@ def get_twos_complement_val(val: int, bits: int) -> int:
 
 class MIPS_lite:
     # Init
-    def __init__(self, mode: str, mem_fname: str, out_fname: str) -> None:
+    def __init__(self, mode: str, mem_fname: str) -> None:
         # Save mode, memory image filename, and output filename
         self.mode = mode
         self.mem_fname = mem_fname
-        self.out_fname = out_fname
 
         # Halt flag
         self.halt_flag = False
@@ -36,7 +35,6 @@ class MIPS_lite:
         # Debugging print
         logging.debug('Starting simulator with the following config: ')
         logging.debug('Memory Image File: ' + self.mem_fname)
-        logging.debug('Output File: ' + self.out_fname)
         logging.debug('Mode: ' + self.mode)
 
         # Clock cycle counter
@@ -389,7 +387,7 @@ class MIPS_lite:
                     self.R[self.pipeline[4].rt] = self.pipeline[4].B
                     logging.debug(f'WB: R{self.pipeline[4].rt} = {self.pipeline[4].B}')
                     # Add to modified reg list
-                    if self.pipeline[4].rt not in self.modified_regs:
+                    if self.pipeline[4].rt not in self.modified_regs and self.pipeline[4].rt != 0:
                         self.modified_regs.append(self.pipeline[4].rt)
                 elif self.pipeline[4].opcode == Instruction.I_type_instr.get('STW'):
                     pass
@@ -403,13 +401,13 @@ class MIPS_lite:
                     self.R[self.pipeline[4].rt] = self.pipeline[4].alu_out
                     logging.debug(f'WB: R{self.pipeline[4].rt} = {self.pipeline[4].alu_out}')
                     # Add to modified reg list
-                    if self.pipeline[4].rt not in self.modified_regs:
+                    if self.pipeline[4].rt not in self.modified_regs and self.pipeline[4].rt != 0:
                         self.modified_regs.append(self.pipeline[4].rt)
             else:
                 self.R[self.pipeline[4].rd] = self.pipeline[4].alu_out
                 logging.debug(f'WB: R{self.pipeline[4].rd} = {self.pipeline[4].alu_out}')
                 # Add to modified reg list
-                if self.pipeline[4].rd not in self.modified_regs:
+                if self.pipeline[4].rd not in self.modified_regs and self.pipeline[4].rd != 0:
                     self.modified_regs.append(self.pipeline[4].rd)
 
 

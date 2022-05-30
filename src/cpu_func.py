@@ -24,16 +24,13 @@ def get_twos_complement_val(val: int, bits: int) -> int:
 
 class MIPS_lite_func:
     #Init
-    def __init__ (self, mem_fname: str, out_fname: str) -> None:
+    def __init__ (self, mem_fname: str) -> None:
         # Save memory image filename, and output filename 
         self.mem_fname = mem_fname
-        self.out_fname = out_fname
 
         # Debugging print
         logging.debug('Starting simulator with the following config: ')
         logging.debug('Memory Image File: ' + self.mem_fname)
-        logging.debug('Output File: ' + self.out_fname)
-
        
         self.pc = 0
         self.npc = 0 
@@ -86,10 +83,10 @@ class MIPS_lite_func:
         self.instr_count += 1
 
         if instr.opcode in Instruction.R_type_instr.values():
-            if instr.rd not in self.modified_regs:
+            if instr.rd not in self.modified_regs and instr.rd != 0:
                 self.modified_regs.append(instr.rd)
         else:
-            if instr.rt not in self.modified_regs:
+            if instr.rt not in self.modified_regs and instr.rt != 0:
                 self.modified_regs.append(instr.rt)
 
         

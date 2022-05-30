@@ -16,9 +16,9 @@ import sys
 # main() - entry point for the simulator
 if __name__ == '__main__':
     # Make sure number of arguments is correct
-    if len(sys.argv) < 5:
+    if len(sys.argv) < 4:
         print("Error! Please run the program using the correct arguments: \n")
-        print("./mips_sim <memory_image> <output_file> <debug_level> <mode>")
+        print("./mips_sim <memory_image> <debug_level> <mode>")
         print("\nDebug level can be: RELEASE, DEBUG, INFO")
         print("Mode can be: FUNC, NO-FWD, FWD")
         exit(1)
@@ -30,12 +30,9 @@ if __name__ == '__main__':
     if not os.path.exists(memory_image_fname):
         print("Memory image file not found! Please check the path.")
         exit(1)
-    
-    # Grab output filename
-    output_fname = sys.argv[2]
 
     # Setup logging configuration
-    debug_arg = sys.argv[3].lower()
+    debug_arg = sys.argv[2].lower()
 
     # Set default debug level
     debug_level = logging.DEBUG
@@ -44,10 +41,8 @@ if __name__ == '__main__':
         debug_level = logging.ERROR
     elif debug_arg == 'debug':
         debug_level = logging.DEBUG
-    elif debug_arg == 'info':
-        debug_level = logging.INFO
     else:
-        print("Incorrect format for debug level. Please use: RELEASE, DEBUG or INFO")
+        print("Incorrect format for debug level. Please use: RELEASE or DEBUG")
         exit(1)
     
     # Set debugging level
@@ -55,21 +50,21 @@ if __name__ == '__main__':
 
     # Grab simulator mode
     modes = ['func', 'no-fwd', 'fwd']
-    sim_mode = sys.argv[4].lower()
+    sim_mode = sys.argv[3].lower()
     if sim_mode not in modes:
         print("Incorrect format for mode. Please use: FUNC, NO-FWD, FWD")
         exit(1)
 
     # Instantiate CPU
     if sim_mode == 'func':
-        cpu_inst = cpu_func.MIPS_lite_func(memory_image_fname, output_fname)
+        cpu_inst = cpu_func.MIPS_lite_func(memory_image_fname)
     else:
-        cpu_inst = cpu.MIPS_lite(sim_mode, memory_image_fname, output_fname)
+        cpu_inst = cpu.MIPS_lite(sim_mode, memory_image_fname)
 
     # Main loop
     while True:
         if (debug_arg == 'debug'):
-            step = input('')
+            step = input('Press any key to run for 1 more clock cycle')
         
         # CPU Loop
         halt = cpu_inst.do_cpu_things()
