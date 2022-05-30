@@ -54,6 +54,7 @@ class Instruction:
         self.ref_addr = numpy.int32(0)
         self.alu_out = numpy.int32(0)
         self.mem_to_mem = 0
+        self.dh_counted = False
 
         # Forwarding flags
         self.fwd_A = 0

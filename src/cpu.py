@@ -77,6 +77,7 @@ class MIPS_lite:
         self.mem_instr_count = 0
         self.cntrl_instr_count = 0
         self.stall_count = 0
+        self.num_data_hazards = 0
 
     # Function to add to a list, and keep it unique
     def add_to_list(self, lst, reg):
@@ -147,6 +148,11 @@ class MIPS_lite:
                     else: 
                         self.data_hazard = True
                         self.num_clocks_to_stall = 2
+
+            # Count the data hazard
+            if self.data_hazard == True and self.pipeline[1].dh_counted == False:
+                self.pipeline[1].dh_counted = True
+                self.num_data_hazards += 1
 
 
     # Flushing pipeline

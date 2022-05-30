@@ -92,6 +92,7 @@ if __name__ == '__main__':
     # Print stalls
     if sim_mode != 'func':
         print(f'\nTotal stalls: {cpu_inst.stall_count}')
+        print(f'Number of Data Hazards: {cpu_inst.num_data_hazards}')
 
     # Print modified addresses
     print('\nModified Addresses:')
