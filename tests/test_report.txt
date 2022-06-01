@@ -1,0 +1,24 @@
+R-Type Instruction
+Instruction     Proper Execution    Data Hazards   Control Hazards
+ADD                 T                   T               NA        
+SUB                                                     NA 
+MUL                                                     NA
+OR                  T                                   NA
+AND                 T                                   NA
+XOR                 T                                   NA
+
+
+I-Type Instructions 
+Instruction     Proper Execution    Data Hazards   Control Hazards
+ADDI                T                   T               NA
+SUBI                                                    NA
+MULI                                                    NA           
+ANDI                T                                   NA  
+ORI                 T                                   NA  
+XORI                T                                   NA  
+LDW                 T                   T               NA  
+STW                 T                   T               NA  
+BZ                  T                   T               T
+BEQ                 T                   T
+JR                  
+HALT                NA                  NA              NA       
