@@ -21,7 +21,7 @@ def op_code_check(opcode: str):
         "ADDI": 0b000001,
         "SUBI": 0b000011,
         "MULI": 0b000101,
-        "ORI ": 0b000111,
+        "ORI": 0b000111,
         "ANDI": 0b001001,
         "XORI": 0b001011,
         "LDW": 0b001100,
