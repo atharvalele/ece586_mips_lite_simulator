@@ -1,8 +1,8 @@
 R-Type Instruction
 Instruction     Proper Execution    Data Hazards   Control Hazards
 ADD                 T                   T               NA        
-SUB                                                     NA 
-MUL                                                     NA
+SUB                 T                                   NA 
+MUL                 T                                   NA
 OR                  T                                   NA
 AND                 T                                   NA
 XOR                 T                                   NA
@@ -11,8 +11,8 @@ XOR                 T                                   NA
 I-Type Instructions 
 Instruction     Proper Execution    Data Hazards   Control Hazards
 ADDI                T                   T               NA
-SUBI                                                    NA
-MULI                                                    NA           
+SUBI                T                                   NA
+MULI                T                                   NA           
 ANDI                T                                   NA  
 ORI                 T                                   NA  
 XORI                T                                   NA  
