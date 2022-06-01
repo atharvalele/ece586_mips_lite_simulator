@@ -134,7 +134,8 @@ class Instruction:
             src_regs.append(self.rs)
 
         # Rt is a source reg if it is a R-type instruction or BEQ
-        if ((self.opcode in Instruction.R_type_instr.values()) or (self.opcode == Instruction.I_type_instr.get('BEQ'))):
+        if ((self.opcode in Instruction.R_type_instr.values()) or (self.opcode == Instruction.I_type_instr.get('BEQ')) or \
+            (self.opcode == Instruction.I_type_instr.get('LDW')) or (self.opcode == Instruction.I_type_instr.get('STW'))):
             if self.rt != 0:
                 src_regs.append(self.rt)
 
